@@ -25,7 +25,7 @@ async def get_crop_recommendations_from_gemini(weather_info: dict, location_info
     - Average Temperature: {weather_info['avg_temp']:.2f}°C
     - Total Weekly Rainfall: {weather_info['total_rainfall']:.2f} mm
 
-    Please recommend 5 crops suitable for planting in this region.
+    Please recommend 5 crops suitable for planting in this region.(most of the time requests will be come from Sri Lanka so consider that as well)
     For each crop, provide a short description of why it is suitable.
     The output should be a JSON array of objects, where each object has 'name' and 'details' keys.
     For example:
