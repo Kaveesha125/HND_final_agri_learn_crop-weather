@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException,Depends
-from services.crop_service import recommend_crops, recommend_crops_by_coords
+from services.crop_service import recommend_crops, recommend_crops_by_coords,LocationInfo
 from models.schemas import WeatherResponse, CropRecommendationsResponse
 from services.geocode_service import reverse_geocode
 from utils.auth import verify
+import asyncio
+
 router = APIRouter(dependencies=[Depends(verify)])
 @router.get("/")
 async def health_check():
@@ -25,13 +27,42 @@ async def reverse_geocode_endpoint(lat: float, lon: float):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.get("/weather", response_model=WeatherResponse)
 async def weather(location: str):
     try:
         from services.geocode_service import geocode_location
         from services.weather_service import get_weather
+
+        # Get coordinates
         lat, lon = await geocode_location(location)
-        return await get_weather(lat, lon)
+
+        # Get weather and location info in parallel
+        weather_data_task = get_weather(lat, lon)
+        location_info_task = reverse_geocode(lat, lon)
+
+        weather_data, location_info_dict = await asyncio.gather(
+            weather_data_task,
+            location_info_task
+        )
+
+        # Create the location object
+        location_details = LocationInfo(
+            latitude=lat,
+            longitude=lon,
+            display_name=location_info_dict.get("display_name"),
+            city=location_info_dict.get("city"),
+            district=location_info_dict.get("district"),
+            province=location_info_dict.get("province"),
+            country=location_info_dict.get("country")
+        )
+
+        # Return the full response
+        return WeatherResponse(
+            avg_temp=weather_data["avg_temp"],
+            total_rainfall=weather_data["total_rainfall"],
+            location=location_details
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
