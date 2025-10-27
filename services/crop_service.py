@@ -2,7 +2,7 @@ import asyncio
 from .geocode_service import geocode_location, reverse_geocode
 from .weather_service import get_weather
 from .gemini_service import get_crop_recommendations_from_gemini
-from models.schemas import CropRecommendation, CropRecommendationsResponse, WeatherResponse, LocationInfo
+from models.schemas import CropRecommendationsResponse, WeatherResponse, LocationInfo
 
 async def recommend_crops(location: str) -> CropRecommendationsResponse:
     try:
@@ -31,16 +31,14 @@ async def recommend_crops(location: str) -> CropRecommendationsResponse:
             country=location_info_dict["country"]
         )
 
-        # Get crop recommendations from Gemini
-        gemini_recommendations = await get_crop_recommendations_from_gemini(
+        # Get crop recommendations from Gemini as a Markdown string
+        gemini_recommendations_md = await get_crop_recommendations_from_gemini(
             weather_info={"avg_temp": avg_temp, "total_rainfall": weekly_rainfall},
             location_info=location_info.dict()
         )
 
-        recommendations = [CropRecommendation(name=rec["name"], details={"description": rec["details"]}) for rec in gemini_recommendations]
-
         return CropRecommendationsResponse(
-            recommendations=recommendations,
+            recommendations=gemini_recommendations_md,
             weather=WeatherResponse(
                 avg_temp=avg_temp,
                 total_rainfall=weekly_rainfall,
@@ -75,16 +73,14 @@ async def recommend_crops_by_coords(lat: float, lon: float) -> CropRecommendatio
             country=location_info_dict["country"]
         )
 
-        # Get crop recommendations from Gemini
-        gemini_recommendations = await get_crop_recommendations_from_gemini(
+        # Get crop recommendations from Gemini as a Markdown string
+        gemini_recommendations_md = await get_crop_recommendations_from_gemini(
             weather_info={"avg_temp": avg_temp, "total_rainfall": weekly_rainfall},
             location_info=location_info.dict()
         )
 
-        recommendations = [CropRecommendation(name=rec["name"], details={"description": rec["details"]}) for rec in gemini_recommendations]
-
         return CropRecommendationsResponse(
-            recommendations=recommendations,
+            recommendations=gemini_recommendations_md,
             weather=WeatherResponse(
                 avg_temp=avg_temp,
                 total_rainfall=weekly_rainfall,

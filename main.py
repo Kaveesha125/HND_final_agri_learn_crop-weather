@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 import os
-from routers import crop_weather
+from routers import crop_weather, livestock
+import services.gemini_service  # Import to ensure API key is configured on startup
 
 load_dotenv()
 
@@ -9,6 +10,7 @@ app = FastAPI(title="Agri Learn Crop & Weather Service")
 
 # Mount routers
 app.include_router(crop_weather.router)
+app.include_router(livestock.router)
 
 if __name__ == "__main__":
     import uvicorn

@@ -12,7 +12,8 @@ if gemini_api_key:
 else:
     raise ValueError("GEMINI_API_KEY not found in .env file")
 
-async def get_crop_recommendations_from_gemini(weather_info: dict, location_info: dict) -> list:
+
+async def get_crop_recommendations_from_gemini(weather_info: dict, location_info: dict) -> str:
     """
     Get crop recommendations from the Gemini API based on weather and location.
     """
@@ -25,25 +26,13 @@ async def get_crop_recommendations_from_gemini(weather_info: dict, location_info
     - Average Temperature: {weather_info['avg_temp']:.2f}°C
     - Total Weekly Rainfall: {weather_info['total_rainfall']:.2f} mm
 
-    Please recommend 5 crops suitable for planting in this region.(most of the time requests will be come from Sri Lanka so consider that as well)
+    Please recommend 5 crops suitable for planting in this region. Most of the requests will come from Sri Lanka, so consider that as well.
     For each crop, provide a short description of why it is suitable.
-    The output should be a JSON array of objects, where each object has 'name' and 'details' keys.
-    For example:
-    [
-        {{"name": "Crop Name", "details": "Reason for recommendation."}},
-        ...
-    ]
+
+    Format the entire response in Markdown for clear presentation. Use headings for each crop, bold text for key terms, and bullet points for details.
     """
     try:
         response = await model.generate_content_async(prompt)
-        # Clean the response to extract only the JSON part
-        cleaned_response = response.text.strip()
-        if cleaned_response.startswith("```json"):
-            cleaned_response = cleaned_response[7:]
-        if cleaned_response.endswith("```"):
-            cleaned_response = cleaned_response[:-3]
-
-        return json.loads(cleaned_response)
+        return response.text
     except Exception as e:
         raise Exception(f"Failed to get recommendations from Gemini: {str(e)}")
-

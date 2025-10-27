@@ -15,10 +15,19 @@ class WeatherResponse(BaseModel):
     total_rainfall: float
     location: Optional[LocationInfo] = None
 
-class CropRecommendation(BaseModel):
-    name: str
-    details: Optional[Dict]
-
 class CropRecommendationsResponse(BaseModel):
-    recommendations: List[CropRecommendation]
+    recommendations: str  # Changed from List[CropRecommendation]
     weather: WeatherResponse
+
+class LivestockRequest(BaseModel):
+    animal_type: str
+    age: float
+    number_of_animals: int
+    animal_purpose: str
+    food_type: str
+    additional_information: Optional[str] = None
+
+class LivestockResponse(BaseModel):
+    recommendation: str
+    animal_type: str
+    animal_purpose: str
