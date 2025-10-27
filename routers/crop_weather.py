@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException,Depends
 from services.crop_service import recommend_crops, recommend_crops_by_coords
 from models.schemas import WeatherResponse, CropRecommendationsResponse
 from services.geocode_service import reverse_geocode
-router = APIRouter()
+from utils.auth import verify
+router = APIRouter(dependencies=[Depends(verify)])
 @router.get("/")
 async def health_check():
     return {"site is up"}

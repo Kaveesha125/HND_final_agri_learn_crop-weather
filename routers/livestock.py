@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException,Depends
 from services.livestock_service import get_livestock_recommendations
 from models.schemas import LivestockRequest, LivestockResponse
+from utils.auth import verify
 
-router = APIRouter(prefix="/livestock", tags=["livestock"])
+router = APIRouter(prefix="/livestock", tags=["livestock"],dependencies=[Depends(verify)])
 
 @router.post("/calculate", response_model=LivestockResponse)
 async def calculate_livestock_feed(livestock_data: LivestockRequest):
