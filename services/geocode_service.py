@@ -4,7 +4,7 @@ import asyncio
 async def geocode_location(location: str) -> tuple[float, float]:
     async with httpx.AsyncClient(timeout=10.0) as client:
         url = f"https://nominatim.openstreetmap.org/search?q={location}&format=json&limit=1"
-        headers = {"User-Agent": "AgriLearnApp/1.0 (contact@agrilearn.com) FastAPI"}
+        headers = {"User-Agent": "AgriLearnApp/1.0 (edacwtest@gmail.com)"}
 
         try:
             response = await client.get(url, headers=headers)
@@ -30,7 +30,7 @@ async def reverse_geocode(lat: float, lon: float, max_retries: int = 3) -> dict:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json"
-                headers = {"User-Agent": "AgriLearn/1.0 (your.email@example.com)"}
+                headers = {"User-Agent": "AgriLearnApp/1.0 (edacwtest@gmail.com)"}
 
                 response = await client.get(url, headers=headers)
 
