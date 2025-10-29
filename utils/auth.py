@@ -1,40 +1,60 @@
-# FILE: utils/auth.py
 from fastapi import Request, HTTPException, status
-from utils.supabase import supabase  # Make sure this import matches your file
-
+from utils.supabase import supabase
 
 async def verify(request: Request):
-    """
-    Verify the requester is a valid student or teacher.
-    Works by checking headers injected by the API Gateway (X-User-Id, X-User-Role).
-    Falls back to cookies/headers for local development.
-    """
 
-    # 1. Check for Gateway-injected headers (production)
-    user_id = request.headers.get("X-User-Id")
-    role = request.headers.get("X-User-Role")
+    token = None
+    user_id_from_header = None
+    role_from_header = None
 
-    # 2. Fallback for local testing (dev)
-    if not user_id:
-        user_id = request.cookies.get("user_id") or request.headers.get("user_id")
-    if not role:
-        role = request.cookies.get("role") or request.headers.get("role")
 
-    # --- Validation ---
-    if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing user_id (header or cookie)")
+    gateway_user_id = request.headers.get("X-User-Id")
+    gateway_role = request.headers.get("X-User-Role")
 
-    if role not in ["student", "teacher"]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid role: {role}")
+    if gateway_user_id and gateway_role:
+        print("DEBUG: Using Gateway Headers for Auth")
+        user_id_from_header = gateway_user_id
+        role_from_header = gateway_role
+        if role_from_header not in ["student", "teacher", "admin"]: # Include admin if applicable
+             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid role from Gateway: {role_from_header}")
+        return {"user_id": user_id_from_header, "role": role_from_header}
 
-    # Check if user exists in the correct table
-    table = "students" if role == "student" else "teachers"
+    token = request.cookies.get("access_token")
+    print(f"DEBUG: Token from cookie: {'Present' if token else 'Missing'}") # Add more logging
 
-    # Use the supabase client imported from utils.supabase
-    res = supabase.table(table).select("id").eq("id", user_id).execute()
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+             print("DEBUG: Falling back to Authorization header")
+             token = auth_header.split(" ")[1]
 
-    if not res.data:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not found in database")
+    if not token:
+        print("DEBUG: No token found in cookies or headers.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing access token (cookie or header)")
 
-    # Return both user_id and role
-    return {"user_id": user_id, "role": role}
+    try:
+        print("DEBUG: Attempting Supabase token validation...")
+        user_response = supabase.auth.get_user(token)
+
+        if not user_response or not user_response.user:
+            print("DEBUG: Supabase validation failed: No user returned.")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token (Supabase)")
+
+        user = user_response.user
+        user_id = user.id
+        role = user.user_metadata.get("role", "student") if user.user_metadata else "student"
+        print(f"DEBUG: Supabase validation successful. UserID: {user_id}, Role: {role}")
+
+        if role not in ["student", "teacher", "admin"]: # Ensure role is valid
+            print(f"DEBUG: Invalid role '{role}' found in token metadata.")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid role found in token: {role}")
+
+        print(f"DEBUG: User verified successfully. UserID: {user_id}, Role: {role}")
+        return {"user_id": user_id, "role": role}
+
+    except HTTPException as e:
+         print(f"DEBUG: HTTPException during verification: {e.detail}")
+         raise e
+    except Exception as e:
+        print(f"DEBUG: Unexpected error during Supabase validation: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Token validation failed: {str(e)}")
